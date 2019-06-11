@@ -1,0 +1,8 @@
+library("ape")
+library("kmer")
+library("MASS")
+setwd("C:/Users/Matthew/Documents/UAMS SURF/K-mer testing/FAA files")
+aminoAcids <- read.FASTA("GCF_000005845.2_ASM584v2_genomic.faa", type = "AA")
+aminoAcidsDist <- kdistance(aminoAcids, k = 4)
+aminoAcidsTree <- as.dendrogram(hclust(aminoAcidsDist), "average")
+plot(heatmap(as.matrix(aminoAcidsDist), Rowv=aminoAcidsTree, Colv = "Rowv", scale = "none"))

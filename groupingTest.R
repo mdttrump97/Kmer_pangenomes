@@ -1,0 +1,11 @@
+library("FindMyFriends")
+library("kebabs")
+library("Matrix")
+
+setwd("/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/FAA_files/")
+genomeFiles <- list.files(getwd(), full.names=TRUE, pattern='*.faa')
+pan <- pangenome(genomeFiles[1:10], translated=TRUE, geneLocation='prodigal', lowMem=FALSE)
+setwd("/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/")
+groupingList <- as.integer(read.csv("10_genome_top_4_4mer_full_alphabet_cosine_grouping_list_0.5_ps.csv", header=FALSE, sep=',', stringsAsFactors = FALSE))
+pan <- manualGrouping(pan, groupingList)
+plotStat(pan, type='qual', palette = 6)
