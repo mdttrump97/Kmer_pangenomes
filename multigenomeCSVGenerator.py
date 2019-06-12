@@ -29,7 +29,7 @@ for file in file_list:
     df.index = df.index.to_series().map(kmer_dict)
     df.columns = df.columns.to_series().map(protein_dict)
     
-    print("Getting top x kmers")
+    print("Getting top 10 kmers")
 
     for col in list(df.columns):
         loop = df[df[col] != 0]
@@ -43,10 +43,10 @@ top_x_df = pd.DataFrame(dicty)
 top_x_df = top_x_df.fillna(0)
 top_x_coo = sparse.coo_matrix(top_x_df)
 print("Writing to file")
-io.mmwrite('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_top_5_table_full_alphabet_compressed.mtx', top_x_coo)
-with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_5_kmers.csv', 'w') as writeFile:
+io.mmwrite('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_top_10_table_full_alphabet_compressed.mtx', top_x_coo)
+with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_10_kmers.csv', 'w') as writeFile:
     writer = csv.writer(writeFile)
     writer.writerow(top_x_df.index)
-with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_5_protein_list.csv', 'w') as writeFile:
+with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_10_protein_list.csv', 'w') as writeFile:
     writer = csv.writer(writeFile)
     writer.writerow(top_x_df.columns)
