@@ -3,6 +3,14 @@ import pandas as pd
 import glob
 import csv
 
+def get_kmer_subset(amino_acid_subset, kmer_list):
+    kmer_subset = list()
+
+    for kmer in kmer_list:
+        if any(amino_acid in kmer for amino_acid in amino_acid_subset):
+            kmer_subset.append(kmer)
+    return kmer_subset
+
 kmer_list = pd.read_csv("/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_list.csv")
 del kmer_list["Unnamed: 0"]
 kmer_list = kmer_list["x"]
@@ -29,24 +37,37 @@ for file in file_list:
     df.index = df.index.to_series().map(kmer_dict)
     df.columns = df.columns.to_series().map(protein_dict)
     
-    print("Getting top 10 kmers")
-
-    for col in list(df.columns):
-        loop = df[df[col] != 0]
-        loop = loop[col]
-        loop = loop.sort_values(ascending = False)
+    print("Generating protein vectors")
+    
+    for protein in list(df.columns):
+        nonzero_kmer_df = df[df[protein] != 0]
+        kmer_counts = nonzero_kmer_df[protein]
+        sorted_kmer_counts = kmer_counts.sort_values(ascending = False)
         # how many top occuring kmers?
-        loop = loop[0:5]
-        dicty[col] = loop
+        protein_vector = sorted_kmer_counts[0:3]
+        #print("top 3 vector:")
+        #print(protein_vector)
+        
+        charged_kmers = get_kmer_subset(["H", "R", "K", "D", "E"], kmer_counts.index)
+        charged_kmer_counts = kmer_counts.loc[charged_kmers,]
+        sorted_charged_kmer_counts = charged_kmer_counts.sort_values(ascending = False)
+        #print("charged kmers: ")
+        #print(str(sorted_charged_kmer_counts[0:3]))
+        # how many top occuring charged kmers?
+        protein_vector = protein_vector.append(sorted_charged_kmer_counts[0:3])
+        dicty[protein] = protein_vector
+        #print("top 3 + top 3 charged vector:")
+        #print(protein_vector)
+        #print("------------------------------------------------")
 
 top_x_df = pd.DataFrame(dicty)
 top_x_df = top_x_df.fillna(0)
 top_x_coo = sparse.coo_matrix(top_x_df)
 print("Writing to file")
-io.mmwrite('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_top_10_table_full_alphabet_compressed.mtx', top_x_coo)
-with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_10_kmers.csv', 'w') as writeFile:
+io.mmwrite('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_top_3_all_and_charged_table_full_alphabet_compressed.mtx', top_x_coo)
+with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_3_all_and_charged_kmers.csv', 'w') as writeFile:
     writer = csv.writer(writeFile)
     writer.writerow(top_x_df.index)
-with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_10_protein_list.csv', 'w') as writeFile:
+with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_3_all_and_charged_protein_list.csv', 'w') as writeFile:
     writer = csv.writer(writeFile)
     writer.writerow(top_x_df.columns)
