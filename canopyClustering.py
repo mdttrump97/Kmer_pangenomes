@@ -16,21 +16,15 @@ from scipy import io, sparse
 def main():
     # read in and format data from .csv file
     #df = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_top_3_table_full_alphabet.csv')
-    sparse_matrix = io.mmread('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_top_10_table_full_alphabet_compressed')
+    sparse_matrix = io.mmread('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_3mer_counts_sparse/3mer_top_3_all_FYWH_CM.mtx')
     #df = pd.DataFrame(sparse_matrix.toarray()) 
     print("Converting to csr_matrix")
     df = sparse.csr_matrix(sparse_matrix)
     
-    '''
-    kmers = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_10_kmers.csv')
-    
-    df.index = kmers.columns
-    df.columns = proteins.columns
-    '''
     # proteins are index, kmers are columns
     df = df.transpose()
     
-    proteins = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/top_10_protein_list.csv')
+    proteins = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_3mer_counts_sparse/3mer_top_3_all_FYWH_CM_protein_list.csv')
     # calculate and format distance matrix
     print("Pairwise distance calculation")
     X1_dist = pd.DataFrame(pairwise_distances(df, metric='cosine'))
@@ -43,7 +37,6 @@ def main():
     # set up and format data structures for algorithm
     canopies = dict()
     elligible_points = list(X1_dist.columns)
-    points_in_threshold = []
     clustered_points = []
     
     # set up and format final grouping_list 
@@ -53,13 +46,15 @@ def main():
 
     iteration = 0
     while len(elligible_points) > 0:
+        points_in_threshold = []
         iteration = iteration + 1
         print("iteration: " + str(iteration))
         # record which organisms' proteins have been clustered into this cluster
         # only one protein per organism is allowed in this cluster
         clustered_organisms = []
 
-        center_point = list(elligible_points)[-1]
+        center_point = list(elligible_points)[1]
+        print("center point: " + str(center_point))
         i = len(canopies)
         
         for point in elligible_points:
@@ -73,18 +68,20 @@ def main():
         points_to_cluster = set(points_in_threshold).difference(set(clustered_points))
         clustered_points.extend(points_to_cluster)
         elligible_points = set(elligible_points).difference(set(points_to_cluster))
+        if(center_point in elligible_points):
+            print("center point is still elligible")
         
         canopies[i] = {"c":iteration, "points": points_to_cluster}
         
         for entry in canopies[i]["points"]:
             grouping_list[entry] = iteration
     
-    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_top_10_4mer_full_alphabet_cosine_clusters_0.5_ps.csv', 'w') as csv_file:
+    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_3mer_top_3_all_FYWH_CM_clusters3.csv', 'w') as csv_file:
         writer = csv.writer(csv_file)
         for key, value in canopies.items():
             writer.writerow([key, value])
     
-    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome__4mer_full_alphabet_cosine_grouping_list_0.5_ps.csv', 'w') as csv_file:
+    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_3mer_top_3_all_FYWH_CM_grouping_list3.csv', 'w') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(list(grouping_list.iloc[0])) 
     
