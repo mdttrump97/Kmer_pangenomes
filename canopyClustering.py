@@ -53,7 +53,7 @@ def main():
         # only one protein per organism is allowed in this cluster
         clustered_organisms = []
 
-        center_point = list(elligible_points)[1]
+        center_point = list(elligible_points)[0]
         print("center point: " + str(center_point))
         i = len(canopies)
         
