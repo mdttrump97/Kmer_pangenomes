@@ -16,7 +16,7 @@ from scipy import io, sparse
 def main():
     # read in and format data from .csv file
     #df = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_top_3_table_full_alphabet.csv')
-    sparse_matrix = io.mmread('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_3mer_counts_sparse/3mer_top_3_all_FYWH_CM.mtx')
+    sparse_matrix = io.mmread('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_top_62.mtx')
     #df = pd.DataFrame(sparse_matrix.toarray()) 
     print("Converting to csr_matrix")
     df = sparse.csr_matrix(sparse_matrix)
@@ -24,7 +24,7 @@ def main():
     # proteins are index, kmers are columns
     df = df.transpose()
     
-    proteins = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_3mer_counts_sparse/3mer_top_3_all_FYWH_CM_protein_list.csv')
+    proteins = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_top_6_protein_list2.csv')
     # calculate and format distance matrix
     print("Pairwise distance calculation")
     X1_dist = pd.DataFrame(pairwise_distances(df, metric='cosine'))
@@ -36,7 +36,7 @@ def main():
     
     # set up and format data structures for algorithm
     canopies = dict()
-    elligible_points = list(X1_dist.columns)
+    elligible_points = proteins.columns
     clustered_points = []
     
     # set up and format final grouping_list 
@@ -46,6 +46,7 @@ def main():
 
     iteration = 0
     while len(elligible_points) > 0:
+        #print(elligible_points[0:10])
         points_in_threshold = []
         iteration = iteration + 1
         print("iteration: " + str(iteration))
@@ -67,7 +68,9 @@ def main():
         # cluster points which have not already been clustered
         points_to_cluster = set(points_in_threshold).difference(set(clustered_points))
         clustered_points.extend(points_to_cluster)
-        elligible_points = set(elligible_points).difference(set(points_to_cluster))
+        
+        elligible_points = [x for x in elligible_points if x not in points_to_cluster]
+        #elligible_points = list(set(elligible_points).difference(set(points_to_cluster)))
         if(center_point in elligible_points):
             print("center point is still elligible")
         
@@ -76,12 +79,12 @@ def main():
         for entry in canopies[i]["points"]:
             grouping_list[entry] = iteration
     
-    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_3mer_top_3_all_FYWH_CM_clusters3.csv', 'w') as csv_file:
+    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_top_6_clusters2.csv', 'w') as csv_file:
         writer = csv.writer(csv_file)
         for key, value in canopies.items():
             writer.writerow([key, value])
     
-    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_3mer_top_3_all_FYWH_CM_grouping_list3.csv', 'w') as csv_file:
+    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_top_6_grouping_list2.csv', 'w') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(list(grouping_list.iloc[0])) 
     
