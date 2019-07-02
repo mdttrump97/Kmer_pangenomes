@@ -2,6 +2,7 @@ import pandas as pd
 import csv
 from sklearn.metrics.pairwise import pairwise_distances
 from scipy import io, sparse
+import re
 
 # X shoudl be a numpy matrix, very likely sparse matrix: http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.csr_matrix.html#scipy.sparse.csr_matrix
 # T1 > T2 for overlapping clusters
@@ -16,7 +17,7 @@ from scipy import io, sparse
 def main():
     # read in and format data from .csv file
     #df = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_top_3_table_full_alphabet.csv')
-    sparse_matrix = io.mmread('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_top_62.mtx')
+    sparse_matrix = io.mmread('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/medioid_3mer_top_6.mtx')
     #df = pd.DataFrame(sparse_matrix.toarray()) 
     print("Converting to csr_matrix")
     df = sparse.csr_matrix(sparse_matrix)
@@ -24,7 +25,7 @@ def main():
     # proteins are index, kmers are columns
     df = df.transpose()
     
-    proteins = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_counts_sparse/4mer_top_6_protein_list2.csv')
+    proteins = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/medioid_3mer_top_6_protein_list.csv')
     # calculate and format distance matrix
     print("Pairwise distance calculation")
     X1_dist = pd.DataFrame(pairwise_distances(df, metric='cosine'))
@@ -43,6 +44,7 @@ def main():
     grouping_list = pd.DataFrame(list([None] * X1_dist.shape[0]))
     grouping_list = grouping_list.T
     grouping_list.columns = X1_dist.columns
+    
 
     iteration = 0
     while len(elligible_points) > 0:
@@ -60,11 +62,12 @@ def main():
         
         for point in elligible_points:
             if(X1_dist[center_point][point] < threshold):
+                organism = re.split("[0-9]", point)[0]
                 # check for organisms that have already been clustered
-                if(point.split('_')[0] not in clustered_organisms):
+                if(organism not in clustered_organisms):
                     points_in_threshold.append(point) 
-                    clustered_organisms.append(point.split('_')[0])
-                    
+                    clustered_organisms.append(organism)
+            
         # cluster points which have not already been clustered
         points_to_cluster = set(points_in_threshold).difference(set(clustered_points))
         clustered_points.extend(points_to_cluster)
@@ -79,12 +82,12 @@ def main():
         for entry in canopies[i]["points"]:
             grouping_list[entry] = iteration
     
-    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_top_6_clusters2.csv', 'w') as csv_file:
+    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/medioid_3mer_top_6_ps_clusters.csv', 'w') as csv_file:
         writer = csv.writer(csv_file)
         for key, value in canopies.items():
             writer.writerow([key, value])
     
-    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_top_6_grouping_list2.csv', 'w') as csv_file:
+    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/medioid_3mer_top_6_ps_grouping_list.csv', 'w') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(list(grouping_list.iloc[0])) 
     
