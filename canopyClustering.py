@@ -4,92 +4,123 @@ from sklearn.metrics.pairwise import pairwise_distances
 from scipy import io, sparse
 import re
 
-# X shoudl be a numpy matrix, very likely sparse matrix: http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.csr_matrix.html#scipy.sparse.csr_matrix
-# T1 > T2 for overlapping clusters
-# T1 = Distance to centroid point to not include in other clusters
-# T2 = Distance to centroid point to include in cluster
-# T1 > T2 for overlapping clusters
-# T1 < T2 will have points which reside in no clusters
-# T1 == T2 will cause all points to reside in mutually exclusive clusters
-# Distance metric can be any from here: http://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.pairwise_distances.html
-# filemap may be a list of point names in their order in X. If included, row numbers from X will be replaced with names from filemap. 
- 
-def main():
-    # read in and format data from .csv file
-    #df = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_top_3_table_full_alphabet.csv')
-    sparse_matrix = io.mmread('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/medioid_3mer_top_6.mtx')
-    #df = pd.DataFrame(sparse_matrix.toarray()) 
-    print("Converting to csr_matrix")
-    df = sparse.csr_matrix(sparse_matrix)
+def get_nonzero_minimum(distances, point, threshold):
+    distances = pd.DataFrame(distances)
+    distances = distances.loc[distances[point] < threshold]
+    distances = distances[point].sort_values(ascending=True)
     
-    # proteins are index, kmers are columns
-    df = df.transpose()
-    
-    proteins = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/medioid_3mer_top_6_protein_list.csv')
-    # calculate and format distance matrix
-    print("Pairwise distance calculation")
-    X1_dist = pd.DataFrame(pairwise_distances(df, metric='cosine'))
-    X1_dist.columns = proteins.columns
-    X1_dist.index = proteins.columns
-    
-    # distance threshold for clustering proteins together
-    threshold = 0.5
-    
-    # set up and format data structures for algorithm
-    canopies = dict()
-    elligible_points = proteins.columns
-    clustered_points = []
-    
-    # set up and format final grouping_list 
-    grouping_list = pd.DataFrame(list([None] * X1_dist.shape[0]))
-    grouping_list = grouping_list.T
-    grouping_list.columns = X1_dist.columns
-    
-
-    iteration = 0
-    while len(elligible_points) > 0:
-        #print(elligible_points[0:10])
-        points_in_threshold = []
-        iteration = iteration + 1
-        print("iteration: " + str(iteration))
-        # record which organisms' proteins have been clustered into this cluster
-        # only one protein per organism is allowed in this cluster
-        clustered_organisms = []
-
-        center_point = list(elligible_points)[0]
-        print("center point: " + str(center_point))
-        i = len(canopies)
+    for distance in distances:
+        if distance > 0:
+            return distance
+    return 1
         
-        for point in elligible_points:
-            if(X1_dist[center_point][point] < threshold):
-                organism = re.split("[0-9]", point)[0]
-                # check for organisms that have already been clustered
-                if(organism not in clustered_organisms):
-                    points_in_threshold.append(point) 
-                    clustered_organisms.append(organism)
+threshold = 0.675
+data_folder = '/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/'
+input_description = 'medioid_3mer_top_9'
+output_description = 'medioid_3mer_top_9_0.675'
+    
+# read in and format data from .csv file
+sparse_matrix = io.mmread(data_folder + input_description + '.mtx')
+#df = pd.DataFrame(sparse_matrix.toarray()) 
+print("Converting to csr_matrix")
+df = sparse.csr_matrix(sparse_matrix)
+
+# proteins are index, kmers are columns
+df = df.transpose()
+
+proteins = pd.read_csv(data_folder + input_description + '_protein_list.csv')
+# calculate and format distance matrix
+print("Pairwise distance calculation")
+pairwise_distance_matrix = pd.DataFrame(pairwise_distances(df, metric='cosine'))
+pairwise_distance_matrix.columns = proteins.columns
+pairwise_distance_matrix.index = proteins.columns
+
+# set up and format data structures for algorithm
+canopies = dict()
+
+# set up and format final grouping_list 
+grouping_list = pd.DataFrame(list([None] * pairwise_distance_matrix.shape[0]))
+grouping_list = grouping_list.T
+grouping_list.columns = pairwise_distance_matrix.columns
+
+preclusters = dict()
+elligible_points = list(proteins.columns)
+preclustered_points = []
+while len(elligible_points) > 0:
+    points_in_precluster = []
+    precluster_center = elligible_points.pop()
+    print("Center: " + str(precluster_center))
+    for point in elligible_points:
+        if(pairwise_distance_matrix[precluster_center][point] == 0):
+            points_in_precluster.append(point)
+            preclustered_points.append(point)
+            elligible_points.remove(point)
+    points_in_precluster.append(precluster_center)
+    preclusters[precluster_center] = points_in_precluster
+    print("Points still available: " + str(len(elligible_points)))
+    print("----------------------------------------------------------")
+
+elligible_points = list(preclusters.keys())
+canopies = dict()
+reduced_distance_matrix = pairwise_distance_matrix.drop(list(preclustered_points))
+reduced_distance_matrix = reduced_distance_matrix.drop(preclustered_points, axis = 1)
+
+print("Finding nonzero mininum distances")
+nonzero_min_distances = dict()
+for point in elligible_points:
+    nonzero_min_distances[point] = get_nonzero_minimum(reduced_distance_matrix, point, threshold)
             
-        # cluster points which have not already been clustered
-        points_to_cluster = set(points_in_threshold).difference(set(clustered_points))
-        clustered_points.extend(points_to_cluster)
-        
-        elligible_points = [x for x in elligible_points if x not in points_to_cluster]
-        #elligible_points = list(set(elligible_points).difference(set(points_to_cluster)))
-        if(center_point in elligible_points):
-            print("center point is still elligible")
-        
-        canopies[i] = {"c":iteration, "points": points_to_cluster}
-        
-        for entry in canopies[i]["points"]:
-            grouping_list[entry] = iteration
+iteration = 0
+while len(elligible_points) > 0:
+    #print(elligible_points[0:10])
+    points_in_threshold = []
+    # record which organisms' proteins have been clustered into this cluster
+    # only one protein per organism is allowed in this cluster
+    #clustered_organisms = []
+
+    center_point = elligible_points.pop()
+    print("Points still available: " + str(len(elligible_points)))
+    print("----------------------------------------------------------")
     
-    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/medioid_3mer_top_6_ps_clusters.csv', 'w') as csv_file:
-        writer = csv.writer(csv_file)
-        for key, value in canopies.items():
-            writer.writerow([key, value])
+    for point in elligible_points:
+        distance_to_cluster_center = reduced_distance_matrix[center_point][point]
+        
+        nonzero_min_distance = nonzero_min_distances[point]
+        if (distance_to_cluster_center == nonzero_min_distance) & (distance_to_cluster_center < threshold):
+            points_in_threshold.append(point)
+    #reduced_distance_matrix.drop(points_in_threshold, inplace = True)
+    #reduced_distance_matrix.drop(points_in_threshold, axis = 1, inplace = True)
+        
+    '''
+    if(pairwise_distance_matrix[center_point][point] < threshold):
+        #organism = re.split("[0-9]", point)[0]
+        # check for organisms that have already been clustered
+        #if(organism not in clustered_organisms):
+        points_in_threshold.append(point) 
+        #clustered_organisms.append(organism)    
+    '''
+    points_in_threshold.append(center_point)
+    print("points in threshold: " + str(points_in_threshold))
+
+    points_in_canopy = []
+    for point in points_in_threshold:
+        points_in_canopy.extend(preclusters[point])
     
-    with open('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/medioid_3mer_top_6_ps_grouping_list.csv', 'w') as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(list(grouping_list.iloc[0])) 
+    canopies[iteration] = {"c":iteration, "points": points_in_canopy}
     
-if __name__ == "__main__":
-    main()
+    points_in_canopy = list(set(points_in_canopy))
+    
+    for entry in canopies[iteration]["points"]:
+        grouping_list[entry] = iteration
+        
+    elligible_points = [x for x in elligible_points if x not in points_in_threshold]
+    iteration = iteration + 1
+
+with open(data_folder + output_description + '_clusters.txt', 'w') as csv_file:
+    writer = csv.writer(csv_file)
+    for key, value in canopies.items():
+        writer.writerow([key, value])
+
+with open(data_folder + output_description + '_grouping_list.csv', 'w') as csv_file:
+    writer = csv.writer(csv_file)
+    writer.writerow(list(grouping_list.iloc[0])) 
