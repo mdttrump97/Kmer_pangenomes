@@ -1,24 +1,36 @@
 library("ape")
 library("kmer")
-library("MASS")
 library("Matrix")
-setwd("/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/FAA_files/medioid_dataset")
 
+input_folder = "/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/FAA_files/medioid_dataset"
+output_folder = "/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/"
+  
+setwd(input_folder)
 genome_files <- list.files(getwd(), full.names=TRUE, pattern='*.faa')
+
+kmer_length = 3
+kmer_string = paste(toString(kmer_length), "mer", sep = '')
 
 for (file in genome_files)
 {
-  file_name <- strsplit(file, ".faa")[1]
-  out_path <- paste(file,'_4mer_count_matrix_full_alphabet.csv',sep = '')
   proteins <- read.FASTA(file, type = "AA")
   print(paste('Genome ',file,' proteins are loaded'))
-  kmerCounts <- kcount(proteins, k = 4, compress = FALSE)
+  kmerCounts <- kcount(proteins, k = kmer_length, compress = FALSE)
   print(paste('Genome ',file, ' kmerCounts is finished'))
   sparseKmerCounts <- Matrix(kmerCounts, sparse = TRUE)
-  setwd("/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_4mers")
+  
+  file_name <- strsplit(file, ".faa")
+  file_name <- strsplit(file_name[[1]][1], "FAA_files/medioid_dataset/")
+  file_name <- paste(output_folder, file_name[[1]][2], sep = '')
+  out_path <- paste(file_name,paste('_', kmer_string, sep = ''),sep = '')
+  out_path <- paste(out_path, '_count_matrix_full_alphabet.csv',sep = '')
+  
+  protein_out_path <- paste(strsplit(file_name, paste(kmer_string, "_count", sep = ''))[[1]][1], "_protein_list.csv", sep = '')
+
+  setwd(output_folder)
   writeMM(sparseKmerCounts, file=out_path)
-  write.csv(rownames(kmerCounts), file = paste(file, "_protein_list.csv"), sep = '')
-  write.csv(colnames(kmerCounts), file = "4mer_list.csv")
+  write.csv(rownames(kmerCounts), file = protein_out_path)
+  write.csv(colnames(kmerCounts), file = paste(kmer_string, "_list.csv", sep = ''))
   print(paste('Genome ', file, ' matrix is output'))
   print(paste('Genome ',file,' is complete', sep = ''))
 }
