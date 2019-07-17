@@ -4,12 +4,20 @@ library("Matrix")
 
 input_folder = "/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/FAA_files/medioid_dataset"
 output_folder = "/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/"
+kmer_length = 3
+kmer_string = paste(toString(kmer_length), "mer", sep = '')
   
 setwd(input_folder)
 genome_files <- list.files(getwd(), full.names=TRUE, pattern='*.faa')
 
-kmer_length = 3
-kmer_string = paste(toString(kmer_length), "mer", sep = '')
+# Output gene ordering from FindMyFriends for canopyClustering.py output
+pan <- pangenome(genomeFiles[1:length(genomeFiles)], translated=TRUE, geneLocation='prodigal', lowMem=FALSE)
+grouping_list <- c()
+for(x in pan@sequences@ranges@NAMES)
+{
+  grouping_list <- c(grouping_list, strsplit(x, "#")[[1]][1])
+}
+write.csv(grouping_list, file = paste(output_folder,"find_my_friends_gene_ordering_list.csv", sep=''))
 
 for (file in genome_files)
 {
