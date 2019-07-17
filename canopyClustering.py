@@ -48,11 +48,19 @@ used_points = []
 preclusters = dict()
 cluster_centers = list(cluster_centers.index)
 i = 1
-for protein in cluster_centers:
+print("Preclustering exact duplicates")
+while len(cluster_centers) != 0:
+    protein = cluster_centers.pop()
     sorted_distances = pairwise_distances.loc[protein].sort_values()
     available_points = sorted_distances[~sorted_distances.index.isin(used_points)]
     identical_points = list(available_points[available_points == 0].index)
     points_under_threshold = list(available_points[available_points < threshold].index)
+    if(len(points_under_threshold) == 0):
+        print("i: " + str(i))
+        print("Center point: " + str(protein))
+        print("Identical points: ")
+        print(identical_points)
+        print(protein in used_points)
     non_identical_points = list(set(points_under_threshold) - set(identical_points))
     used_points = used_points + points_under_threshold
     used_points.append(protein)
@@ -66,7 +74,9 @@ test2 = points_not_in_precluster
 test3 = used_points
 clusters = dict()
 #i = 1
-for protein in points_not_in_precluster:
+print("Clustering non-duplicate genes")
+while len(points_not_in_precluster) != 0:
+    protein = points_not_in_precluster.pop()
     sorted_distances = pairwise_distances.loc[protein].sort_values()
     available_points = sorted_distances[~sorted_distances.index.isin(used_points)]
     #identical = list(loop_series[loop_series == 0].index)
@@ -105,6 +115,7 @@ df_85 = organism_count.dropna(axis = 1, thresh = 12)
 grouping_list = dict()
 i = 1
 
+print("Formatting clusters")
 for cluster_center in results.keys():
     formatted_clusters = dict()
     formatted_clusters['c'] = i
@@ -123,9 +134,9 @@ for entry in ordered_gene_list:
 df_out = pd.DataFrame()
 df_out['gene'] = ordered_gene_list
 df_out['clust'] = out_list
-df_out.to_csv(data_folder + output_description + '_grouping_list.csv', index = None)
+df_out.to_csv(data_folder + output_description + '_grouping_list2.csv', index = None)
 
-with open(data_folder + output_description + '_clusters.txt', 'w') as csv_file:
+with open(data_folder + output_description + '_clusters2.txt', 'w') as csv_file:
     writer = csv.writer(csv_file)
     for key, value in results.items():
         writer.writerow([key, value])
