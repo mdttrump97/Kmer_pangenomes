@@ -1,126 +1,131 @@
 import pandas as pd
-import csv
 from sklearn.metrics.pairwise import pairwise_distances
 from scipy import io, sparse
-import re
+import csv
 
-def get_nonzero_minimum(distances, point, threshold):
-    distances = pd.DataFrame(distances)
-    distances = distances.loc[distances[point] < threshold]
-    distances = distances[point].sort_values(ascending=True)
-    
-    for distance in distances:
-        if distance > 0:
-            return distance
-    return 1
-        
-threshold = 0.675
+def get_organism(s):
+    head = s.split('.')[0].rstrip('0123456789')
+    return head
+
+threshold = 0.5
 data_folder = '/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/'
 input_description = 'medioid_3mer_top_9'
 output_description = 'medioid_3mer_top_9_0.675'
-    
+
 # read in and format data from .csv file
+#df = pd.read_csv('/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/10_genome_4mer_top_3_table_full_alphabet.csv')
 sparse_matrix = io.mmread(data_folder + input_description + '.mtx')
 #df = pd.DataFrame(sparse_matrix.toarray()) 
 print("Converting to csr_matrix")
 df = sparse.csr_matrix(sparse_matrix)
 
-# proteins are index, kmers are columns
+# proteineins are index, kmers are columns
 df = df.transpose()
 
 proteins = pd.read_csv(data_folder + input_description + '_protein_list.csv')
 # calculate and format distance matrix
 print("Pairwise distance calculation")
-pairwise_distance_matrix = pd.DataFrame(pairwise_distances(df, metric='cosine'))
-pairwise_distance_matrix.columns = proteins.columns
-pairwise_distance_matrix.index = proteins.columns
+pairwise_distances = pd.DataFrame(pairwise_distances(df, metric='cosine'))
+pairwise_distances.columns = proteins.columns
+pairwise_distances.index = proteins.columns
 
-# set up and format data structures for algorithm
-canopies = dict()
+elligible = list(pairwise_distances.columns)
 
-# set up and format final grouping_list 
-grouping_list = pd.DataFrame(list([None] * pairwise_distance_matrix.shape[0]))
-grouping_list = grouping_list.T
-grouping_list.columns = pairwise_distance_matrix.columns
+# make a sub dataframe with 100 proteineins
+subset_columns = elligible[0:101]
+# reduce the dist mat to the 100 proteineins
+subset_distances = pairwise_distances[subset_columns]
+# isolate the 100% duplicate rows across 100 proteineins
+subset_duplicates = subset_distances[subset_distances.duplicated(keep = False)]
+# list of 100% identical proteineins
+eligible_proteins = list(subset_duplicates.index)
+                            
+# reduce duplicate rows to uniques 
+# basically list(set(list(meh)))
+cluster_centers = subset_duplicates.drop_duplicates()
 
+used_points = []
 preclusters = dict()
-elligible_points = list(proteins.columns)
-preclustered_points = []
-while len(elligible_points) > 0:
-    points_in_precluster = []
-    precluster_center = elligible_points.pop()
-    print("Center: " + str(precluster_center))
-    for point in elligible_points:
-        if(pairwise_distance_matrix[precluster_center][point] == 0):
-            points_in_precluster.append(point)
-            preclustered_points.append(point)
-            elligible_points.remove(point)
-    points_in_precluster.append(precluster_center)
-    preclusters[precluster_center] = points_in_precluster
-    print("Points still available: " + str(len(elligible_points)))
-    print("----------------------------------------------------------")
+cluster_centers = list(cluster_centers.index)
+i = 1
+for protein in cluster_centers:
+    sorted_distances = pairwise_distances.loc[protein].sort_values()
+    available_points = sorted_distances[~sorted_distances.index.isin(used_points)]
+    identical_points = list(available_points[available_points == 0].index)
+    points_under_threshold = list(available_points[available_points < threshold].index)
+    non_identical_points = list(set(points_under_threshold) - set(identical_points))
+    used_points = used_points + points_under_threshold
+    used_points.append(protein)
+    used_points = list(set(used_points))
+    cluster_centers = list(set(cluster_centers) - set(used_points))
+    preclusters['clus_' + str(i)] = points_under_threshold
+    i+=1
 
-elligible_points = list(preclusters.keys())
-canopies = dict()
-reduced_distance_matrix = pairwise_distance_matrix.drop(list(preclustered_points))
-reduced_distance_matrix = reduced_distance_matrix.drop(preclustered_points, axis = 1)
+points_not_in_precluster = list(set(elligible) - set(used_points))
+test2 = points_not_in_precluster
+test3 = used_points
+clusters = dict()
+#i = 1
+for protein in points_not_in_precluster:
+    sorted_distances = pairwise_distances.loc[protein].sort_values()
+    available_points = sorted_distances[~sorted_distances.index.isin(used_points)]
+    #identical = list(loop_series[loop_series == 0].index)
+    points_under_threshold = list(available_points[available_points < threshold].index)
+    #non_identical = list(set(merge) - set(identical))
+    used_points = used_points + points_under_threshold
+    #used_points.append(protein)
+    used_points = list(set(used_points))
+    points_not_in_precluster = list(set(points_not_in_precluster) - set(used_points))
+    clusters['clus_' + str(i)] = points_under_threshold
+    i+=1
 
-print("Finding nonzero mininum distances")
-nonzero_min_distances = dict()
-for point in elligible_points:
-    nonzero_min_distances[point] = get_nonzero_minimum(reduced_distance_matrix, point, threshold)
-            
-iteration = 0
-while len(elligible_points) > 0:
-    #print(elligible_points[0:10])
-    points_in_threshold = []
-    # record which organisms' proteins have been clustered into this cluster
-    # only one protein per organism is allowed in this cluster
-    #clustered_organisms = []
+non_empty_clusters = dict()
+for cluster_center in list(clusters.keys()):
+    cluster = clusters[cluster_center]
+    if len(cluster) > 0:
+        non_empty_clusters[cluster_center] = cluster
 
-    center_point = elligible_points.pop()
-    print("Points still available: " + str(len(elligible_points)))
-    print("----------------------------------------------------------")
-    
-    for point in elligible_points:
-        distance_to_cluster_center = reduced_distance_matrix[center_point][point]
-        
-        nonzero_min_distance = nonzero_min_distances[point]
-        if (distance_to_cluster_center == nonzero_min_distance) & (distance_to_cluster_center < threshold):
-            points_in_threshold.append(point)
-    #reduced_distance_matrix.drop(points_in_threshold, inplace = True)
-    #reduced_distance_matrix.drop(points_in_threshold, axis = 1, inplace = True)
-        
-    '''
-    if(pairwise_distance_matrix[center_point][point] < threshold):
-        #organism = re.split("[0-9]", point)[0]
-        # check for organisms that have already been clustered
-        #if(organism not in clustered_organisms):
-        points_in_threshold.append(point) 
-        #clustered_organisms.append(organism)    
-    '''
-    points_in_threshold.append(center_point)
-    print("points in threshold: " + str(points_in_threshold))
+results = {**preclusters, **non_empty_clusters}
 
-    points_in_canopy = []
-    for point in points_in_threshold:
-        points_in_canopy.extend(preclusters[point])
+'''
+organism_count = dict()
+for cluster_center in results.keys():
+    cluster = results[cluster_center]
+    org_list = [get_organism(protein) for protein in cluster]
+    org_list = list(set(org_list))
+    organism_count[cluster_center] = pd.Series(org_list).value_counts()
     
-    canopies[iteration] = {"c":iteration, "points": points_in_canopy}
-    
-    points_in_canopy = list(set(points_in_canopy))
-    
-    for entry in canopies[iteration]["points"]:
-        grouping_list[entry] = iteration
-        
-    elligible_points = [x for x in elligible_points if x not in points_in_threshold]
-    iteration = iteration + 1
+organism_count = pd.DataFrame(organism_count)
+
+df_100 = organism_count.dropna(axis = 1, thresh = 14)
+df_93 = organism_count.dropna(axis = 1, thresh = 13)
+df_85 = organism_count.dropna(axis = 1, thresh = 12) 
+'''
+
+grouping_list = dict()
+i = 1
+
+for cluster_center in results.keys():
+    formatted_clusters = dict()
+    formatted_clusters['c'] = i
+    formatted_clusters['points'] = results[cluster_center]
+    clusters[i] = formatted_clusters
+    for protein in formatted_clusters['points']:
+        grouping_list[protein] = i
+    i += 1
+
+ordered_gene_list = list(pd.read_csv(data_folder + 'find_my_friends_gene_ordering_list.csv')['x'])
+
+out_list = []
+for entry in ordered_gene_list:
+    out_list.append(str(grouping_list[str(entry).strip()]))
+
+df_out = pd.DataFrame()
+df_out['gene'] = ordered_gene_list
+df_out['clust'] = out_list
+df_out.to_csv(data_folder + output_description + '_grouping_list.csv', index = None)
 
 with open(data_folder + output_description + '_clusters.txt', 'w') as csv_file:
     writer = csv.writer(csv_file)
-    for key, value in canopies.items():
+    for key, value in results.items():
         writer.writerow([key, value])
-
-with open(data_folder + output_description + '_grouping_list.csv', 'w') as csv_file:
-    writer = csv.writer(csv_file)
-    writer.writerow(list(grouping_list.iloc[0])) 
