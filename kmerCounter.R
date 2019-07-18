@@ -1,9 +1,11 @@
 library("ape")
 library("kmer")
 library("Matrix")
+library("FindMyFriends")
 
-input_folder = "/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/FAA_files/medioid_dataset"
-output_folder = "/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/medioid_3mers/"
+input_folder = "/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/FAA_files/14_genomes/"
+folder_name = "FAA_files/14_genomes/"
+output_folder = "/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/14_genomes/"
 kmer_length = 3
 kmer_string = paste(toString(kmer_length), "mer", sep = '')
   
@@ -11,7 +13,7 @@ setwd(input_folder)
 genome_files <- list.files(getwd(), full.names=TRUE, pattern='*.faa')
 
 # Output gene ordering from FindMyFriends for canopyClustering.py output
-pan <- pangenome(genomeFiles[1:length(genomeFiles)], translated=TRUE, geneLocation='prodigal', lowMem=FALSE)
+pan <- pangenome(genome_files[1:length(genome_files)], translated=TRUE, geneLocation='prodigal', lowMem=FALSE)
 grouping_list <- c()
 for(x in pan@sequences@ranges@NAMES)
 {
@@ -28,7 +30,7 @@ for (file in genome_files)
   sparseKmerCounts <- Matrix(kmerCounts, sparse = TRUE)
   
   file_name <- strsplit(file, ".faa")
-  file_name <- strsplit(file_name[[1]][1], "FAA_files/medioid_dataset/")
+  file_name <- strsplit(file_name[[1]][1], folder_name)
   file_name <- paste(output_folder, file_name[[1]][2], sep = '')
   out_path <- paste(file_name,paste('_', kmer_string, sep = ''),sep = '')
   out_path <- paste(out_path, '_count_matrix_full_alphabet.csv',sep = '')
