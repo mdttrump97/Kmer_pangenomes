@@ -46,8 +46,8 @@ top_x_most_occurrent = 9
 
 # Format input and output
 kmer_length = '3'
-data_folder = '/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/phylotypeA/'
-output_description = "phylotypeA_3mer_top_9"
+data_folder = '/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/staph/'
+output_description = "staph_3mer_top_9"
 
 # Get kmers from file (output from kmerCounter.R)
 kmer_list = pd.read_csv(data_folder + kmer_length + "mer_list.csv")
@@ -84,11 +84,11 @@ for i in range(len(file_list)):
     for protein in list(kmer_counts.columns):
         # Get nonzero k-mer counts
         nonzero_kmer_df = kmer_counts[kmer_counts[protein] != 0]
-        kmer_counts = nonzero_kmer_df[protein]
+        nonzero_kmer_counts = nonzero_kmer_df[protein]
         
-        kmer_count_tuple = list(zip(kmer_counts.index,kmer_counts))
+        kmer_count_tuple = list(zip(kmer_counts.index,nonzero_kmer_counts))
         # Sort k-mer counts by occurrence (high to low)
-        sorted_kmer_counts = sort_kmer_counts(kmer_counts)[1]
+        sorted_kmer_counts = sort_kmer_counts(nonzero_kmer_counts)[1]
         
         # How many top occuring kmers?
         protein_vector = sorted_kmer_counts[0:top_x_most_occurrent]

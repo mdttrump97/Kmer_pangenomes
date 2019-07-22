@@ -9,11 +9,11 @@ def get_organism(s):
     return head
 
 # If cosine distance less than this threshold, cluster proteins together
-clustering_threshold = 0.5
+clustering_threshold = 0.6
 
 # Format input and output
-data_folder = '/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/phylotypeA/'
-input_description = 'phylotypeA_3mer_top_9'
+data_folder = '/Users/matthewthompson/Documents/UAMS_SURF/K-mer_testing/CSV_files/staph/'
+input_description = 'staph_3mer_top_9'
 output_description = input_description + '_' + str(clustering_threshold)
 
 # Read in k-mer count matrix (output from kmerSelector.py)
@@ -57,7 +57,7 @@ while len(cluster_centers) != 0:
     sorted_distances = pairwise_distances.loc[cluster_center].sort_values()
     available_points = sorted_distances[~sorted_distances.index.isin(used_points)]
     identical_points = list(available_points[available_points == 0].index)
-    points_under_threshold = list(available_points[available_points < threshold].index)
+    points_under_threshold = list(available_points[available_points < clustering_threshold].index)
     used_points = used_points + points_under_threshold
     used_points.append(cluster_center)
     used_points = list(set(used_points))
