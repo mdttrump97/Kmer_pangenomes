@@ -3,7 +3,6 @@ Created by Matthew Thompson
 
 ## **Alignment-free Construction of Pan-genomes**
 This repository stores code created during my time at the University of Arkansas for Medical Sciences Summer Undergraduate Research Program (UAMS SURF). 
-The goal of my research internship was to create software that creates bacterial pan-genomes using alignment-free methodologies. 
 
 ### **What is a pan-genome?**
 A pan-genome is the total collection of genes present in a group of organisms. As bacteria can quickly transfer and receieve genetic material via mechanisms of horizontal gene transfer, 
@@ -22,15 +21,15 @@ in a sequence, information about the original sequence is stored. K-mer occurren
 ## **Workflow**
 GenBank -> Prodigal -> kmerCounter.R -> kmerSelector.py -> canopyClustering.py -> grouping.R
 
-### **Acquiring genomes**
+### **Step 1:** Acquiring genomes
 Genomes are downloaded using [Batch Entrez](https://www.ncbi.nlm.nih.gov/sites/batchentrez) by uploading a text file containing the accession numbers of the desired assemblies. Choose database "Assembly", and then download genomes
 as GenBank Genomic FASTA files (.fna files).
 
-### **Translating genomes**
+### **Step 2:** Translating genomes
 Genomes are translated using [Prodigal](https://github.com/hyattpd/Prodigal). 
 `prodigal -i ___.fna -a ___.faa -q`
 
-### **kmerCounter.R**
+### **Step 3:** Counting k-mers with kmerCounter.R
 This program counts k-mers of a desired length from each protein in each genome and outputs the k-mers, the proteins, and the k-mer counts for each protein
 
 **Input:** 
@@ -42,7 +41,7 @@ This program counts k-mers of a desired length from each protein in each genome 
 * One .csv file of k-mers
 * An ordered list of proteins to organize clustering output in canopyClustering.py
 
-### **kmerSelector.R**
+### **Step 4:** Selecting highly occurrent k-mers with kmerSelector.R
 This program reads in the k-mer counts for each protein and chooses a small selection of the most occurrent k-mers to represent each protein. 
 
 **Input:**
@@ -53,7 +52,7 @@ This program reads in the k-mer counts for each protein and chooses a small sele
 * One .csv file of the k-mers that correspond to the matrix rows
 * One .csv file of the protein IDs that correspond to the matrix columns
 
-### **canopyClustering.py**
+### **Step 5:** Grouping similar genes with canopyClustering.py
 This program reads in the large k-mer count matrix and calculates the pairwise distances between every pair of proteins in the matrix. The proteins are then clustered together if their cosine similarity distance 
 is less than a given threshold
 
@@ -64,7 +63,7 @@ is less than a given threshold
 * One .csv file recording the cluster membership for each protein 
 * One .csv files recording the contents of each cluster
 
-### **grouping.R**
+### **Step 4:** Viewing pan-genome graphs with grouping.R
 This program reads in the cluster membership for each protein, applies it to each protein, and then divides each cluster into core, accessory, or singleton categories to describe the pan-genomes of the samples. 
 
 **Input:**
