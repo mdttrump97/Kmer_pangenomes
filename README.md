@@ -73,3 +73,5 @@ This program reads in the cluster membership for each protein, applies it to eac
 **Output:**
 * No direct file output, but pan-genome graphs can be created.
 
+## Documentation:
+Program creation and documentation across 10 weeks is documented in a [jupyter notebook](https://github.com/mdttrump97/UAMS-SURF-Jupyter-Notebook).
