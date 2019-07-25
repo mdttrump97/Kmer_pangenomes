@@ -1,5 +1,4 @@
 # **Kmer_pangenomes**
-Created by Matthew Thompson
 
 ## **Alignment-free Construction of Pan-genomes**
 This repository stores code created during my time at the University of Arkansas for Medical Sciences Summer Undergraduate Research Program (UAMS SURF). 
@@ -64,7 +63,7 @@ is less than a given threshold
 * One .csv files recording the contents of each cluster
 
 ### **Step 4:** Viewing pan-genome graphs with grouping.R
-This program reads in the cluster membership for each protein, applies it to each protein, and then divides each cluster into core, accessory, or singleton categories to describe the pan-genomes of the samples. 
+This program reads in the cluster membership for each protein, applies it to each protein, and then divides each cluster into core, accessory, or singleton categories to describe the pan-genomes of the samples. To have updated graphs from FindMyFriends, download the [updated version](https://github.com/mdttrump97/FindMyFriends) and the build and install the package from source using R Studio. 
 
 **Input:**
 * Output from canopyClustering.R
