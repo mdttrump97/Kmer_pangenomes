@@ -4,7 +4,7 @@
 This repository stores code created during my time at the University of Arkansas for Medical Sciences Summer Undergraduate Research Program (UAMS SURF). 
 
 ### **What is a pan-genome?**
-A pan-genome is the total collection of genes present in a group of organisms. As bacteria can quickly transfer and receieve genetic material via mechanisms of horizontal gene transfer, 
+A pan-genome is the total collection of genes present in a group of organisms. As bacteria can easily transfer and receive genetic material via mechanisms of horizontal gene transfer, 
 a diverse set of genes may be present among organisms of the same species. Pan-genomes are composed of core genes (genes present in all genomes analyzed), accessory genes (genes present in some genomes analyzed), 
 and singleton genes (genes present in only one genome). These divisions carry biological signficance, with core genes typically being associated with essential housekeeping functions, and accessory and singleton genes
 being associated with dispensable, adaptable functions.
